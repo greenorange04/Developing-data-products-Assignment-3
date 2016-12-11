@@ -1,0 +1,77 @@
+Diamonds app
+========================================================
+author: Greenorange04
+date: 11 December 2016
+autosize: true
+
+Introduction
+========================================================
+
+The diamonds app gives estimates of a diamond's price. The estimates are derived from a sample drawn from the diamonds dataset (available from the R ggplot2 package, refer to 
+http://docs.ggplot2.org/0.9.3.1/diamonds.html for the dataset description). The app has an intuitive and interactive interface and presents the used data and estimation results on a graph.
+
+The app has two modes:
+
+- Estimation based on the volume proxy of a diamond (product of its length, width and height)
+- Esimation based on the volume proxy of a diamond and its colour
+
+One mode is not guaranteed to give better estimates than the other.
+
+Estimation based on the volume proxy
+========================================================
+
+```{r, echo=FALSE}
+library(ggplot2)
+diamonds$vol <- with(diamonds, x*y*z)
+diam2 <- diamonds[c(-24068, -48411, -49190),]
+diam3 <- diam2[diam2$vol != 0,]
+set.seed(232)
+samplerows <- sample(nrow(diam3), 2000)
+diam3 <- diam3[samplerows, ]
+mod_vol <- lm(price ~ vol, diam3)
+p_mod_vol <- predict(mod_vol, newdata = data.frame(vol = 0:629))
+df_mod_vol <- data.frame(vol = 0:629, f_price = p_mod_vol)
+volInput <- 230
+pred <- predict(mod_vol, newdata = data.frame(vol = volInput))
+df_modelpred <- data.frame(vol = volInput, pred = pred)
+ggplot() + geom_point(data = diam3, aes(x = vol, y = price), alpha = .4)+
+           geom_line(data = df_mod_vol, aes(x = vol,  y = f_price), size = 1,  
+           color = "red")+ geom_point(data = df_modelpred, aes(x = vol, y = pred),            alpha = 1, size = 8, color = "red")+xlab("Diamond's Volume Proxy") +                ylab("Price in USD")
+```
+***
+Graphical output if estimation based on the volume proxy only is chosen.
+
+The resulting estimated price for the volume proxy of `r volInput` is `r round(df_modelpred$pred[1])` USD.
+
+
+
+Estimation based on the volume proxy and the colour
+========================================================
+
+```{r, echo=FALSE}
+library(ggplot2)
+diamonds$vol <- with(diamonds, x*y*z)
+diam2 <- diamonds[c(-24068, -48411, -49190),]
+diam3 <- diam2[diam2$vol != 0,]
+set.seed(232)
+samplerows <- sample(nrow(diam3), 2000)
+diam3 <- diam3[samplerows, ]
+mod_vol_color <- lm(price ~ vol * color, diam3)
+p_mod_vol_color <- predict(mod_vol_color, newdata = data.frame(color = rep(unique(diam3$color), each =630), vol = 0:629))
+df_mod_vol_color <- data.frame(color = rep(unique(diam3$color), each =630), vol = 0:629, f_price = p_mod_vol_color)
+volInput <- 230
+whichcolor <- "J"
+pred <- predict(mod_vol_color, newdata = data.frame(vol = volInput,
+                                color = whichcolor))
+df_modelpred <- data.frame(vol = volInput, color = whichcolor, pred = pred)
+ggplot() + geom_point(data = diam3, aes(color = color, x = vol, y = price), alpha = .2) + geom_line(data = df_mod_vol_color, aes(color = color, x = vol, y = f_price), size = 1)+  geom_point(data = df_modelpred, aes(color = color, x = vol, y = pred), alpha = 1, size = 8)+ xlab("Diamond's Volume Proxy")+ylab("Price in USD")+ guides(colour = guide_legend("Colour"))
+```
+***
+Graphical output if estimation based on the volume proxy and the colour is chosen.
+
+The resulting estimated price for the volume proxy of `r volInput` and colour `r whichcolor` is `r round(df_modelpred$pred[1])` USD.
+
+Dislaimer
+========================================================
+
+The model was estimated for training purposes only. The used algorithm is very simple and is not guaranteed to generate reliable results
